@@ -95,13 +95,24 @@ n=20
 #     done
 # done
 
+# for k in $(seq 1 1 5)
+# do
+#     for g in ${gamma[@]}
+#     do
+#         for e in ${eta[@]}
+#         do
+#                 python src/half_main.py --log-file flickr-myspace.half-dp.feats.p${p}.lr${l}.negratio${n}.gamma${g}.eta${e}.outsize${o}.times${k} --device :/cpu:0 --gpu-id 0 --feature-src data/flickr-myspace/train-test/feats.flickr --feature-end data/flickr-myspace/train-test/feats.myspace --identity-linkage data/flickr-myspace/train-test/flickr-myspace.anchors.ptrain${p}.train --output res/flickr-myspace.feats.p${p}.lr${l}.negratio${n}.gamma${g}.eta${e}.outsize${o}.times${k} --method half-dp --type-model lin --is-valid True --early-stop True --saving-step 10 --max-epochs 1000 --batch-size 128 --input-size 6 --output-size ${o} --neg-ratio ${n} --lr ${l} --gamma ${g} --eta ${e}
+#         done
+#     done
+# done
+
 for k in $(seq 1 1 5)
 do
     for g in ${gamma[@]}
     do
         for e in ${eta[@]}
         do
-                python src/half_main.py --log-file flickr-myspace.half-dp.feats.p${p}.lr${l}.negratio${n}.gamma${g}.eta${e}.outsize${o}.times${k} --device :/cpu:0 --gpu-id 0 --feature-src data/flickr-myspace/train-test/feats.flickr --feature-end data/flickr-myspace/train-test/feats.myspace --identity-linkage data/flickr-myspace/train-test/flickr-myspace.anchors.ptrain${p}.train --output res/flickr-myspace.feats.p${p}.lr${l}.negratio${n}.gamma${g}.eta${e}.outsize${o}.times${k} --method half-dp --type-model lin --is-valid True --early-stop True --saving-step 10 --max-epochs 1000 --batch-size 128 --input-size 6 --output-size ${o} --neg-ratio ${n} --lr ${l} --gamma ${g} --eta ${e}
+                python src/half_main.py --log-file flickr-myspace.half-dp.feats.alpne.s16.gamma10.p${p}.lr${l}.negratio${n}.gamma${g}.eta${e}.outsize${o}.times${k} --device :/cpu:0 --gpu-id 0 --feature-src data/flickr-myspace/train-test/feats.alp-ne.s16.gamma10.flickr --feature-end data/flickr-myspace/train-test/feats.alp-ne.s16.gamma10.myspace --identity-linkage data/flickr-myspace/train-test/flickr-myspace.anchors.ptrain${p}.train --output res/flickr-myspace.feats.alpne.s16.gamma10.p${p}.lr${l}.negratio${n}.gamma${g}.eta${e}.outsize${o}.times${k} --method half-dp --type-model lin --is-valid True --early-stop True --saving-step 10 --max-epochs 1000 --batch-size 128 --input-size 16 --output-size ${o} --neg-ratio ${n} --lr ${l} --gamma ${g} --eta ${e}
         done
     done
 done

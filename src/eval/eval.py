@@ -179,8 +179,10 @@ class Eval_HALF_DP(Eval):
                 cnt = 0
                 wrt_lns = ''
                 lb_tp = '%s2%s'%(tps[tp_id], tps[tps_len-tp_id])
+                lb_tp_inv = '%s2%s'%(tps[tps_len-tp_id], tps[tp_id])
                 fout.write('%s\n'%lb_tp)
-                to_keys = list(self.inputs[tps[tps_len-tp_id]].keys())
+                # to_keys = list(self.inputs[tps[tps_len-tp_id]].keys())
+                to_keys = list(self.labels[lb_tp_inv].keys())
                 to_size = len(to_keys)
                 fout.write('Overall: %d\n'%len(self.labels[lb_tp].keys()))
                 for nd_from, nds_to in self.labels[lb_tp].items():
@@ -265,14 +267,14 @@ class Eval_HALF_DP(Eval):
                     res_bin = np.where(res>=0, np.ones(res.shape,dtype=int), -np.ones(res.shape,dtype=int))
                     model_res[nm][tag][k] = res_bin
                     for idx in range(len(res_bin)):
-                        # print(nm, tag, idx, res_bin[idx], len(dim_index[nm][tag]))
+                        # print(nm, tag, idx, len(res_bin), res_bin[idx], len(dim_index[nm][tag]))
                         dim_index[nm][tag][idx][res_bin[idx]].add(k)
                     cnt += 1
         print('Finish building indices')
 
         return dim_index, model_res
 
-    def _search_sim_res(self, model_res, dim_index, search_nd, thres):
+    def _search_sim_res(self, model_res, dim_index, search_nd):
         search_res = defaultdict(int)
 
         for nm in range(len(dim_index)):
@@ -283,8 +285,8 @@ class Eval_HALF_DP(Eval):
                     for nd in dim_index[nm]['end'][dim_idx][res_nd_from[dim_idx]]:
                         cnt_search_res[nd] += 1
             for k,v in cnt_search_res.items():
-                if v>=thres:
-                    search_res[k] += v
+                # if v>=thres:
+                search_res[k] += v
     #         print(search_res['585135'], cnt_search_res['585135'])
     #         print(search_res['2666863'], cnt_search_res['2666863'])
                             
@@ -296,42 +298,54 @@ class Eval_HALF_DP(Eval):
         return search_res_list
 
     def choose_candidates(self, **kwargs):
-        allows_keys = {'dim_index', 'model_res', 'filter_thres', 'candidate_num', 'out_file'}
+        allows_keys = {'dim_index', 'model_res', 'top_rank', 'out_file'}
         for kw in kwargs.keys():
             assert kw in allows_keys, 'Invalid candidates calculation parameter: '+kw
 
         dim_index = kwargs['dim_index']
         model_res = kwargs['model_res']
-        filter_thres = kwargs['filter_thres']
+        # filter_thres = kwargs['filter_thres']
         # col_prop = kwargs['col_prop']
         # n_model = kwargs['n_model']
         # n_dim = kwargs['n_dim']
         
         # dim_index, model_res = self._build_index(model=kwargs['model'], n_dim=n_dim, n_model=n_model)
         # save_index(kwargs['out_file']+'.index', dim_index)
-        save_res(kwargs['out_file'], model_res)
+        # save_res(kwargs['out_file'], model_res)
 
         with open(kwargs['out_file'], 'w') as fout:
             # Searching
             cnt = 0
             hits = 0
-            # cand_lens = []
-            # hit_cand_lens = list()
+            cand_lens = tuple()
+            hit_cand_lens = tuple()
             wrt_lns = ''
             for nd_from, nds_to in self.labels['src2end'].items():
-                search_res = self._search_sim_res(model_res, dim_index, nd_from, filter_thres)
+                search_res = self._search_sim_res(model_res, dim_index, nd_from)
 
                 sort_index = np.argsort(list(map(lambda x: x[1], search_res)))[::-1]
                 filter_nds = list()
                 filter_nds_set = set()
                 filter_vals = list()
-                hit_cnt = 0
-                for idx in sort_index:
-                    hit_cnt += 1
-                    filter_nds.append(search_res[idx][0])
-                    filter_vals.append(search_res[idx][1])
-                    if hit_cnt>=kwargs['candidate_num']:
+                rank = 0
+                prev_val = -1
+                for k in range(len(sort_index)):
+                    if prev_val>0 and search_res[sort_index[k]][1]!=prev_val:
+                        rank += 1
+                    if rank>=kwargs['top_rank']:
                         break
+                    filter_nds.append(search_res[sort_index[k]][0])
+                    filter_vals.append(search_res[sort_index[k]][1])
+                    prev_val = search_res[sort_index[k]][1]
+
+                # hit_cnt = 0
+                # for idx in sort_index:
+                #     hit_cnt += 1
+                #     filter_nds.append(search_res[idx][0])
+                #     filter_vals.append(search_res[idx][1])
+                #     if hit_cnt>=kwargs['candidate_num'] \
+                #         and search_res[idx][1]!=search_res[sort_index[hit_cnt-2]][1]:
+                #         break
                 filter_nds_set = set(filter_nds)
 
                 cnt += 1
@@ -340,6 +354,8 @@ class Eval_HALF_DP(Eval):
                     if nd_to in filter_nds_set:
                         hits += 1
                         is_hit = True
+                        hit_cand_lens += len(filter_nds),
+                    cand_lens += len(filter_nds),
                 wrt_lns += '({},{}):{}:{}\n'.format(nd_from, ','.join([nd_to for nd_to in nds_to])
                                                     , is_hit
                                                     , ','.join([str(k) for k in zip(filter_nds, filter_vals)]))
@@ -382,3 +398,7 @@ class Eval_HALF_DP(Eval):
             if cnt%100:
                 fout.write(wrt_lns)
             fout.write('Hits rate: %f\n'%(hits/cnt))
+            if hit_cand_lens:
+                fout.write('Average length of hits: %f (%f)\n'%(np.mean(hit_cand_lens), np.std(hit_cand_lens)))
+            if cand_lens:
+                fout.write('Average length of candidates: %f (%f)\n'%(np.mean(cand_lens), np.std(cand_lens)))

@@ -58,13 +58,15 @@ def load_train_valid_labels(filename, lookups, valid_prop, delimiter=','):
 
 def batch_iter(lbs, batch_size, neg_ratio, lookup, lb_tag_src, lb_tag_end):
     train_lbs = lbs['{}2{}'.format(lb_tag_src,lb_tag_end)]['train']
-    cands_end = list(lookup[lb_tag_end].keys())
+    train_lbs_inv = lbs['{}2{}'.format(lb_tag_end,lb_tag_src)]['train']
+    # cands_end = list(lookup[lb_tag_end].keys())
 
     start_index = 0
     train_size = len(train_lbs)
     end_index = min(start_index+batch_size, train_size)
 
     lb_keys_src = list(train_lbs.keys())
+    lb_keys_end = list(train_lbs_inv.keys())
     shuffle_indices = np.random.permutation(np.arange(train_size))
     while start_index < end_index:
         pos = {lb_tag_src:list(), lb_tag_end:list()}
@@ -83,7 +85,7 @@ def batch_iter(lbs, batch_size, neg_ratio, lookup, lb_tag_src, lb_tag_end):
                 for k in range(neg_ratio):
                     nd_idx['rand'] = -1
                     while nd_idx['rand']<0 or nd_idx['rand'] in lbs_idx_end:
-                        nd_idx['rand'] = np.random.randint(0, len(cands_end))
+                        nd_idx['rand'] = lookup[lb_tag_end][lb_keys_end[np.random.randint(0, len(lb_keys_end))]]
                     neg_idx_cur[lb_tag_src].append(nd_idx[lb_tag_src])
                     neg_idx_cur[lb_tag_end].append(nd_idx['rand'])
                 pos[lb_tag_src].append(nd_idx[lb_tag_src])
@@ -98,10 +100,12 @@ def batch_iter(lbs, batch_size, neg_ratio, lookup, lb_tag_src, lb_tag_end):
 
 def valid_iter(lbs, valid_sample_size, lookup, lb_tag_src, lb_tag_end):
     valid_lbs = lbs['{}2{}'.format(lb_tag_src,lb_tag_end)]['valid']
+    valid_lbs_inv = lbs['{}2{}'.format(lb_tag_end,lb_tag_src)]['train']
     cands_end = list(lookup[lb_tag_end].keys())
 
     valid = {lb_tag_src:list(), lb_tag_end:list()}
     lb_keys_src = list(valid_lbs.keys())
+    lb_keys_end = list(valid_lbs_inv.keys())
     for lb_src in lb_keys_src:
         if not lb_src in lookup[lb_tag_src]:
             continue
@@ -116,6 +120,7 @@ def valid_iter(lbs, valid_sample_size, lookup, lb_tag_src, lb_tag_end):
             for k in range(valid_sample_size-1):
                 nd_idx['rand'] = -1
                 while nd_idx['rand']<0 or nd_idx['rand'] in lbs_idx_end:
+                    # nd_idx['rand'] = lookup[lb_tag_end][lb_keys_end[np.random.randint(0, len(lb_keys_end))]]
                     nd_idx['rand'] = np.random.randint(0, len(cands_end))
                 cand[lb_tag_src].append(nd_idx[lb_tag_src])
                 cand[lb_tag_end].append(nd_idx['rand'])

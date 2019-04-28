@@ -25,6 +25,8 @@ def parse_args():
                         , help='Model type: [lin/mlp]')
     parser.add_argument('-n-cands', default=9, type=int
                         , help='Number of candidates')
+    parser.add_argument('-top-rank', default=3, type=int
+                        , help='Top rank of the matching list')
     parser.add_argument('-filter-thres', default=9, type=int
                         , help='Threshold for filtering candidates in each model')
     # parser.add_argument('-col-prop', default=0.8, type=float
@@ -48,8 +50,7 @@ def main(args):
         dim_index, model_res = eval_model.build_index(model=args.model, n_dim=args.n_dim
                                                     , n_model=args.n_model)
         eval_model.choose_candidates(dim_index=dim_index, model_res=model_res
-                                    , filter_thres=args.filter_thres, candidate_num=args.n_cands
-                                    , out_file=args.output)
+                                    , top_rank=args.top_rank, out_file=args.output)
     
 if __name__=='__main__':
     main(parse_args())
