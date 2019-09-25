@@ -1,3 +1,8 @@
+* Under progress
+
+Citation: ``Wang, Y., Shen, H., Gao, J., & Cheng, X. (2019, May). Learning Binary Hash Codes for Fast Anchor Link Retrieval across Networks. In The World Wide Web Conference (pp. 3335-3341)``
+
+
 python src/eval_half.py -feat-src data/online-offline/train-test/feats.online -feat-end data/online-offline/train-test/feats.offline -linkage data/online-offline/train-test/online-offline.douban.anchors.ptrain10.test -model res/online-offline.feats.p10 -model-type lin -output mrr.half.p10
 
 
